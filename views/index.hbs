@@ -1,0 +1,30 @@
+<main>
+    <div class="container">
+        <div class="row mt-3">
+            <div class="col">
+                <form action="order" method="POST">
+                    <div class="form-group">
+                        <label for="custId">Customer Id</label>
+                        <input type="number" name="custId" id="custId" class="form-control" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <p><label>Product List</label></p>
+                        {{#each productList}}
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="{{ this.id }}" name="product" value="{{ this.id }}">
+                            <label class="form-check-label" for="{{ this.id }}">
+                                <strong>{{ this.product_name }}</strong> <em>(Unit Price: ${{ this.list_price }})</em>
+                            </label>
+                            <label for="qty{{ this.id }}">Qty:</label>
+                            <input type="number" name="qty{{ this.id }}" id="qty{{ this.id }}" min="1">
+                        </div>
+                        {{/each}}
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary mt-3">Submit Order</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
