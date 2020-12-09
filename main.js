@@ -33,7 +33,9 @@ const makeQuery = (sql, pool) => {
             const results = await conn.query(sql, args || []);
             return results[0];
         } catch(e) {
-            console.error('Error executing sql queires to database: ', e);
+            console.error('[ERROR] Failed to execute SQL queires in database.');
+            console.error('[ERROR] Error message: ', e);
+            return Promise.reject(new Error('Failed to execute SQL queires in database.'));
         } finally {
             conn.release();
         }
@@ -54,10 +56,8 @@ app.engine('hbs', handlebars({ defaultLayout: 'default.hbs' }));
 app.set('view engine', 'hbs');
 
 // resources
-app.get(['/', 'index.html'], async(req, res) => {
+app.get('/', async(req, res) => {
     const productList = await getProductList();
-    // console.log('Product list: ', productList);
-
     res.status(200);
     res.type('html');
     res.render('index', { productList });
@@ -85,20 +85,21 @@ app.post('/order', express.urlencoded({ extended: true }), async(req, res) => {
             throw new Error('Invalid customer id!');
 
         // insert into orders table
-        let result = await insertToOrders([ custId ]);
-        const insertedId = result['insertId'];
+        let result = await conn.query(SQL_INSERT_ORDER, [ custId ]);
+        // console.log('[LOG] Result after insert into order table: ', result);
+        const insertedId = result[0]['insertId'];
 
         // insert into order_details table
         for(let i = 0; i < orderList.length; i++) {
-            result = await insertToOrderDetails([ insertedId, orderList[i].pId, orderList[i].qty ]);
+            await conn.query(SQL_INSERT_ORDER_DETAILS, [ insertedId, orderList[i].pId, orderList[i].qty ]);
         }
 
         await conn.commit();
     } catch(e) {
         conn.rollback();
-        console.error('Failed to insert new order in database.')
-        console.error('Transaction is rollback.')
-        console.error('Error message: ', e.message);
+        console.error('[ERROR] Failed to insert new order in database.')
+        console.error('[ERROR] Transaction is rollbacked.')
+        console.error('[ERROR] Error message: ', e.message);
         error = e.message;
     } finally {
         conn.release();
@@ -124,18 +125,18 @@ const startApp = async(app, pool) => {
     try {
         const conn = await pool.getConnection();
 
-        console.info('Pinging database...');
+        console.info('[INFO] Pinging database...');
         await conn.ping();
-        console.info('Pinged database successfully.');
+        console.info('[INFO] Ping database successfully.');
 
         conn.release();
 
         app.listen(APP_PORT, () => {
-            console.info(`Application started on port ${APP_PORT} at ${new Date()}`);
+            console.info(`[INFO] Application started on port ${APP_PORT} at ${new Date()}`);
         });
     } catch(e) {
-        console.error('Failed to start server - unable to ping database.');
-        console.error('Error message: ', e);
+        console.error('[ERROR] Failed to start server. Unable to ping database.');
+        console.error('[ERROR] Error message: ', e);
     }
 };
 
